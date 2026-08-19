@@ -1,0 +1,286 @@
+{
+  "schema_version": 6,
+  "session": {
+    "id": "2f6gfzgdj",
+    "project": "herdr-wiff-89a5dda5",
+    "repo_root": "/Users/kodingwarrior/personal/herdr-wiff",
+    "cwd": "/Users/kodingwarrior/personal/herdr-wiff",
+    "source": "git working copy"
+  },
+  "files": [
+    {
+      "old_path": ".gitignore",
+      "new_path": ".gitignore",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "CLAUDE.md",
+      "new_path": "CLAUDE.md",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "herdr-plugin.toml",
+      "new_path": "herdr-plugin.toml",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "package-lock.json",
+      "new_path": "package-lock.json",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "package.json",
+      "new_path": "package.json",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/bin/action.ts",
+      "new_path": "src/bin/action.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/bin/main-guard.ts",
+      "new_path": "src/bin/main-guard.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/bin/pane.ts",
+      "new_path": "src/bin/pane.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/config.ts",
+      "new_path": "src/config.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/context.ts",
+      "new_path": "src/context.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/herdr.ts",
+      "new_path": "src/herdr.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/json.ts",
+      "new_path": "src/json.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/pane-index.ts",
+      "new_path": "src/pane-index.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/plugin.ts",
+      "new_path": "src/plugin.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/review.ts",
+      "new_path": "src/review.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/runtime.ts",
+      "new_path": "src/runtime.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "src/wiff.ts",
+      "new_path": "src/wiff.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tests/config.test.ts",
+      "new_path": "tests/config.test.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tests/context.test.ts",
+      "new_path": "tests/context.test.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tests/pane-index.test.ts",
+      "new_path": "tests/pane-index.test.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tests/review.test.ts",
+      "new_path": "tests/review.test.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tests/wiff.test.ts",
+      "new_path": "tests/wiff.test.ts",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "tsconfig.json",
+      "new_path": "tsconfig.json",
+      "status": "added",
+      "hunk_count": 1
+    },
+    {
+      "old_path": "vitest.config.ts",
+      "new_path": "vitest.config.ts",
+      "status": "added",
+      "hunk_count": 1
+    }
+  ],
+  "comments": [
+    {
+      "id": "01M0C9XNGXGBHF418PH6QB2FEY",
+      "author": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "target": {
+        "target": "lines",
+        "file": "src/review.ts",
+        "side": "after",
+        "start_line": 30,
+        "end_line": 30
+      },
+      "version": 1,
+      "anchor": {
+        "snippet": [
+          "    return 1;"
+        ],
+        "context_before": [
+          "  const worktree = ctx.worktree ?? ctx.cwd;",
+          "  if (!worktree) {",
+          "    herdr.notify(\"wiff: could not determine the worktree for the focused pane.\");"
+        ],
+        "context_after": [
+          "  }",
+          "",
+          "  const result = wiff.newIfNeeded({"
+        ]
+      },
+      "body": "Should we log a warning here if the worktree can't be resolved from either worktree or cwd?",
+      "created_at": "2026-08-19T06:04:17.821154Z",
+      "updated_at": "2026-08-19T06:04:17.821154Z",
+      "updated_by": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "resolved": false,
+      "resolved_by": null,
+      "deleted": false,
+      "deleted_by": null,
+      "confidence": null,
+      "number": 1,
+      "created_seq": 3,
+      "updated_seq": 3
+    },
+    {
+      "id": "01M0C9Y0HZ692A406Q9TXTYY3H",
+      "author": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "target": {
+        "target": "comment",
+        "id": "01M0C9XNGXGBHF418PH6QB2FEY"
+      },
+      "version": 1,
+      "anchor": null,
+      "body": "Just a thought, not blocking.",
+      "created_at": "2026-08-19T06:04:29.119702Z",
+      "updated_at": "2026-08-19T06:04:29.119702Z",
+      "updated_by": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "resolved": false,
+      "resolved_by": null,
+      "deleted": false,
+      "deleted_by": null,
+      "confidence": null,
+      "number": 4,
+      "created_seq": 6,
+      "updated_seq": 6
+    },
+    {
+      "id": "01M0C9XNH5E3VV212XB7FNTYAJ",
+      "author": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "target": {
+        "target": "file",
+        "file": "src/wiff.ts"
+      },
+      "version": 1,
+      "anchor": null,
+      "body": "Nice doc-comment explaining the TUI-blocking rationale.",
+      "created_at": "2026-08-19T06:04:17.829839Z",
+      "updated_at": "2026-08-19T06:04:17.829839Z",
+      "updated_by": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "resolved": false,
+      "resolved_by": null,
+      "deleted": false,
+      "deleted_by": null,
+      "confidence": null,
+      "number": 2,
+      "created_seq": 4,
+      "updated_seq": 4
+    },
+    {
+      "id": "01M0C9XNHD4RY8BJ4T8NQJ5ZD1",
+      "author": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "target": {
+        "target": "review"
+      },
+      "version": 1,
+      "anchor": null,
+      "body": "Overall looks solid for phase 1.",
+      "created_at": "2026-08-19T06:04:17.837728Z",
+      "updated_at": "2026-08-19T06:04:17.837728Z",
+      "updated_by": {
+        "name": "kodingwarrior",
+        "kind": "human"
+      },
+      "resolved": false,
+      "resolved_by": null,
+      "deleted": false,
+      "deleted_by": null,
+      "confidence": null,
+      "number": 3,
+      "created_seq": 5,
+      "updated_seq": 5
+    }
+  ]
+}
