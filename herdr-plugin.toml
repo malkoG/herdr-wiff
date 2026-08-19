@@ -17,6 +17,12 @@ title = "wiff review"
 placement = "split"
 command = ["sh", "-c", "exec node \"$HERDR_PLUGIN_ROOT/dist/bin/pane.js\" review"]
 
+[[panes]]
+id = "review-pr"
+title = "wiff review (PR)"
+placement = "split"
+command = ["sh", "-c", "exec node \"$HERDR_PLUGIN_ROOT/dist/bin/pane.js\" review-pr"]
+
 [[actions]]
 id = "review"
 title = "wiff: review changes"

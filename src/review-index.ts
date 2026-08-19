@@ -14,6 +14,14 @@ import { join } from "node:path";
 export interface ReviewEntry {
   /** Pane displaying the wiff review, tracked so `reuse_pane` can skip opening a second one. */
   paneId?: string;
+  /**
+   * Which pane entrypoint `paneId` is currently running (`"review"` vs `"review-pr"`). `review`
+   * and `review:pr` show genuinely different content (working copy/branch vs. a specific PR) and
+   * wiff's TUI can't be re-pointed once spawned, so reuse only applies when this matches the
+   * entrypoint being requested — otherwise a `review:pr` call would silently reuse a plain
+   * working-copy pane never bound to any PR (or vice versa).
+   */
+  paneEntrypoint?: string;
   /** Pane running the agent that owns this worktree's changes; the target for `agent prompt`. */
   agentPaneId?: string;
   /** Human-readable agent kind; use `agentPaneId` for addressing. */

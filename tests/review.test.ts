@@ -73,7 +73,10 @@ describe("reviewAction", () => {
     expect(deps.openPane).toHaveBeenCalledWith(
       expect.objectContaining({ entrypoint: "review", cwd: "/repo/wt", placement: "split" }),
     );
-    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", { paneId: "pane-1" });
+    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
+      paneId: "pane-1",
+      paneEntrypoint: "review",
+    });
   });
 
   it("fails and notifies when herdr returns no pane id", () => {
@@ -87,10 +90,18 @@ describe("reviewAction", () => {
 
   it("reuses the tracked pane and does not open a new one", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "pane-existing" });
+    deps.indexGet.mockReturnValue({ paneId: "pane-existing", paneEntrypoint: "review" });
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).not.toHaveBeenCalled();
+  });
+
+  it("opens a new pane when the tracked pane is running a different entrypoint", () => {
+    const deps = makeDeps();
+    deps.indexGet.mockReturnValue({ paneId: "pr-pane", paneEntrypoint: "review-pr" });
+    const status = reviewAction(deps);
+    expect(status).toBe(0);
+    expect(deps.openPane).toHaveBeenCalled();
   });
 
   it("opens a new pane even with a tracked entry when reuse_pane is off", () => {

@@ -36,11 +36,14 @@ export interface NewIfNeededOptions {
 /**
  * Thin wrapper around the wiff CLI, scoped to non-interactive subcommands only.
  *
- * `wiff resume` and bare `wiff new` open a full-screen TUI meant for a human; run from a
- * non-interactive shell they hang forever. This class has no method that can invoke either — every
- * public method here always passes `--no-tui`, so there is no call an agent action can make through
- * this wrapper that launches the TUI. (The pane process that hosts the human's TUI spawns `wiff
- * resume` directly, bypassing this wrapper entirely.)
+ * `wiff resume`, bare `wiff new`, and `wiff forge pull` (verified: it has no `--no-tui` — its own
+ * `--help` says "fetch a pull request into a session and open it", and it fails with "Device not
+ * configured" outside a real tty) all open a full-screen TUI meant for a human; run from a
+ * non-interactive shell they hang or fail outright. This class has no method that can invoke any
+ * of them — every public method here is either always non-interactive by nature or always passes
+ * `--no-tui`. (`forge push`, unlike `pull`, is confirmed non-interactive: verified live against a
+ * real PR with no tty attached.) The pane process that hosts the human's TUI spawns `resume`/
+ * `forge pull` directly, with real stdio, bypassing this wrapper entirely.
  */
 export class WiffCli {
   constructor(
@@ -77,21 +80,12 @@ export class WiffCli {
   }
 
   /**
-   * Mirrors a PR into a session. The token travels via `wiff forge --forge-token-file <path>`
-   * (confirmed in `wiff forge --help`), not an env var or a bare CLI arg: a private, mode-0600
-   * temp file is written just for this call and deleted immediately after, so the token value
-   * never appears in `ps` output and never lingers in `this.env` for a later, non-forge call.
+   * Publishes the review's comments back to the PR. The token travels via
+   * `wiff forge --forge-token-file <path>` (confirmed in `wiff forge --help`), not an env var or a
+   * bare CLI arg: a private, mode-0600 temp file is written just for this call and deleted
+   * immediately after, so the token value never appears in `ps` output and never lingers in
+   * `this.env` for a later, non-forge call.
    */
-  forgePull(opts: { cwd: string; pr: string; token: string }): WiffResult {
-    return withTokenFile(opts.token, (tokenFile) =>
-      this.spawn(this.bin, ["forge", "--forge-token-file", tokenFile, "pull", opts.pr], {
-        cwd: opts.cwd,
-        env: this.env,
-      }),
-    );
-  }
-
-  /** Publishes the review's comments back to the PR. Same per-call token-file scoping as `forgePull`. */
   forgePush(opts: { cwd: string; pr?: string; session?: string; token: string }): WiffResult {
     return withTokenFile(opts.token, (tokenFile) => {
       const args = ["forge", "--forge-token-file", tokenFile, "push"];
@@ -102,8 +96,12 @@ export class WiffCli {
   }
 }
 
-/** Writes `token` to a private (mode 0600), unguessable temp file for the duration of `fn`. */
-function withTokenFile<T>(token: string, fn: (path: string) => T): T {
+/**
+ * Writes `token` to a private (mode 0600), unguessable temp file for the duration of `fn`.
+ * Exported for `bin/pane.ts`, which needs the same token-file scoping for the interactive
+ * `forge pull` it runs with real stdio (see the class doc comment for why that can't live here).
+ */
+export function withTokenFile<T>(token: string, fn: (path: string) => T): T {
   const path = join(tmpdir(), `wiff-forge-token-${randomUUID()}`);
   writeFileSync(path, token, { mode: 0o600 });
   try {

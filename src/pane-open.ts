@@ -16,37 +16,58 @@ export function agentPaneFromContext(ctx: HerdrContext): { agentPaneId?: string;
   return ctx.agentName && ctx.paneId ? { agentPaneId: ctx.paneId, agentName: ctx.agentName } : {};
 }
 
+export interface OpenOrReuseOptions {
+  /** Defaults to `"review"` (runs `wiff resume`); `review:pr` uses `"review-pr"` (runs `wiff forge pull` — it needs its own real tty, same as `resume`, so the action process can't run it itself). */
+  entrypoint?: string;
+  /** Extra env vars for the launched pane, e.g. the PR number `review-pr` reads back. */
+  env?: Record<string, string>;
+}
+
 /**
- * Opens (or reuses) the wiff review pane for `worktree`, once its session already exists.
- * Shared by `review` and `review:pr` — the only difference between them is how the session got
- * created (`wiff new --if-needed` vs `wiff forge pull`); opening the pane afterward is identical.
+ * Opens (or reuses) the wiff review pane for `worktree`.
+ *
+ * Reuse only applies when the tracked pane is running the *same* entrypoint being requested —
+ * `review` and `review:pr` show genuinely different content and wiff's TUI can't be re-pointed
+ * once spawned, so a `review:pr` call must never silently reuse a plain working-copy pane (or
+ * vice versa). A different entrypoint always opens its own pane, alongside any existing one.
+ *
+ * Reusing an already-tracked pane skips opening a new window, but does **not** re-run whatever
+ * the entrypoint does (`wiff resume` just keeps showing what it already had; `review-pr`'s
+ * `forge pull` does not re-sync) — closing and reopening is required for a fresh sync while reusing.
  *
  * When invoked from within an agent's own pane, the agent's pane id is recorded against this
  * worktree — `send-review` later reads it back to know who to hand comments to.
  */
-export function openOrReuseReviewPane(deps: PaneOpenDeps, worktree: string): number {
+export function openOrReuseReviewPane(
+  deps: PaneOpenDeps,
+  worktree: string,
+  opts: OpenOrReuseOptions = {},
+): number {
   const { cfg, ctx, herdr, reviewIndex } = deps;
+  const entrypoint = opts.entrypoint ?? "review";
 
   const agentPatch = agentPaneFromContext(ctx);
   if (Object.keys(agentPatch).length > 0) {
     reviewIndex.upsert(worktree, agentPatch);
   }
 
-  if (cfg.review.reuse_pane && reviewIndex.get(worktree)?.paneId) {
+  const existing = reviewIndex.get(worktree);
+  if (cfg.review.reuse_pane && existing?.paneId && existing.paneEntrypoint === entrypoint) {
     return 0;
   }
 
   const paneId = herdr.openPane({
     plugin: PLUGIN_ID,
-    entrypoint: "review",
+    entrypoint,
     cwd: worktree,
     placement: cfg.review.placement,
+    env: opts.env,
   });
   if (!paneId) {
     herdr.notify(`wiff: could not open the review pane for ${worktree}.`);
     return 1;
   }
 
-  reviewIndex.upsert(worktree, { paneId });
+  reviewIndex.upsert(worktree, { paneId, paneEntrypoint: entrypoint });
   return 0;
 }
