@@ -10,6 +10,8 @@ export interface OpenPaneOptions {
   cwd: string;
   placement: Placement;
   targetPane?: string;
+  /** Extra env vars for the launched pane process, e.g. a non-secret PR number. */
+  env?: Record<string, string>;
 }
 
 /** Thin `spawnSync` wrapper over the herdr CLI — per the docs, the CLI is the entire plugin API. */
@@ -48,6 +50,9 @@ export class HerdrAdapter {
       opts.placement,
     ];
     if (opts.targetPane) args.push("--target-pane", opts.targetPane);
+    for (const [key, value] of Object.entries(opts.env ?? {})) {
+      args.push("--env", `${key}=${value}`);
+    }
     const response = this.json(args);
     const result = asObject(response?.result);
     const pluginPane = asObject(result?.plugin_pane);

@@ -10,7 +10,7 @@ export interface ReviewDeps {
   ctx: HerdrContext;
   herdr: Pick<HerdrAdapter, "notify" | "openPane">;
   wiff: Pick<WiffCli, "newIfNeeded">;
-  reviewIndex: Pick<ReviewIndex, "get" | "upsert">;
+  reviewIndex: Pick<ReviewIndex, "getPane" | "setPane" | "upsert">;
 }
 
 /**

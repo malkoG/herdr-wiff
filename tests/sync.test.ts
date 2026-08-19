@@ -46,10 +46,17 @@ describe("syncAction", () => {
     expect(deps.forgePush).not.toHaveBeenCalled();
   });
 
-  it("resolves the PR number itself and passes it along with the token", () => {
+  it("resolves the PR number itself and pushes both human and agent comments", () => {
     const deps = makeDeps();
     syncAction(deps);
     expect(deps.forgePush).toHaveBeenCalledWith({ cwd: "/repo/wt", pr: "42", token: "ghp_secret" });
+    expect(deps.forgePush).toHaveBeenCalledWith({
+      cwd: "/repo/wt",
+      pr: "42",
+      agent: true,
+      token: "ghp_secret",
+    });
+    expect(deps.forgePush).toHaveBeenCalledTimes(2);
   });
 
   it("pushes without a pr when gh finds none, without failing", () => {
@@ -60,15 +67,27 @@ describe("syncAction", () => {
     expect(deps.forgePush).toHaveBeenCalledWith({ cwd: "/repo/wt", pr: undefined, token: "ghp_secret" });
   });
 
-  it("masks the token in the failure notification when forgePush fails", () => {
+  it("masks the token in the failure notification when the human push fails", () => {
     const deps = makeDeps();
-    deps.forgePush.mockReturnValue({ status: 1, stdout: "", stderr: "denied for ghp_secret" });
+    deps.forgePush.mockReturnValueOnce({ status: 1, stdout: "", stderr: "denied for ghp_secret" });
     syncAction(deps);
     const message = deps.notify.mock.calls.at(-1)?.[0] as string;
     expect(message).not.toContain("ghp_secret");
   });
 
-  it("notifies success on a clean push", () => {
+  it("fails when only the agent push fails, even if the human push succeeds", () => {
+    const deps = makeDeps();
+    deps.forgePush
+      .mockReturnValueOnce({ status: 0, stdout: "", stderr: "" })
+      .mockReturnValueOnce({ status: 1, stdout: "", stderr: "denied for ghp_secret" });
+    const status = syncAction(deps);
+    expect(status).toBe(1);
+    const message = deps.notify.mock.calls.at(-1)?.[0] as string;
+    expect(message).toContain("agent comments");
+    expect(message).not.toContain("ghp_secret");
+  });
+
+  it("notifies success only when both pushes succeed", () => {
     const deps = makeDeps();
     const status = syncAction(deps);
     expect(status).toBe(0);

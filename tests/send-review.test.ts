@@ -47,7 +47,11 @@ function makeDeps(overrides: Partial<SendReviewDeps> = {}): SendReviewDeps & {
   const promptAgent = vi.fn().mockReturnValue(true);
   const sendKeys = vi.fn().mockReturnValue(true);
   const renderFn = vi.fn().mockReturnValue(render([lineComment()]));
-  const indexGet = vi.fn().mockReturnValue({ paneId: "review-pane", agentPaneId: "agent-pane", agentName: "claude" });
+  const indexGet = vi.fn().mockReturnValue({
+    panes: { review: "review-pane" },
+    agentPaneId: "agent-pane",
+    agentName: "claude",
+  });
 
   const cfg: PluginConfig = structuredClone(DEFAULTS);
   const ctx: HerdrContext = { worktree: "/repo/wt" };
@@ -124,6 +128,21 @@ describe("sendReviewAction", () => {
     expect(status).toBe(1);
     expect(deps.notify).toHaveBeenCalledWith(expect.stringContaining("could not prompt"));
     expect(deps.sendKeys).not.toHaveBeenCalled();
+  });
+
+  it("refreshes every tracked pane, not just one", () => {
+    const deps = makeDeps({
+      reviewIndex: {
+        get: vi.fn().mockReturnValue({
+          panes: { review: "review-pane", "review-pr:1": "pr-pane" },
+          agentPaneId: "agent-pane",
+          agentName: "claude",
+        }),
+      },
+    });
+    sendReviewAction(deps);
+    expect(deps.sendKeys).toHaveBeenCalledWith("review-pane", "ctrl+r");
+    expect(deps.sendKeys).toHaveBeenCalledWith("pr-pane", "ctrl+r");
   });
 
   it("applies filter_noise from config", () => {

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { WiffCli, type SpawnFn, type WiffResult } from "../src/wiff.js";
+import { WiffCli, withTokenFile, type SpawnFn, type WiffResult } from "../src/wiff.js";
 
 function fakeSpawn(result: WiffResult): { spawn: SpawnFn; calls: unknown[][] } {
   const calls: unknown[][] = [];
@@ -49,54 +49,30 @@ describe("WiffCli.refresh", () => {
   });
 });
 
-describe("WiffCli.forgePull", () => {
-  it("puts --forge-token-file before the pull subcommand, with the PR number after", () => {
-    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
-    const cli = new WiffCli("wiff", spawn, { PATH: "/usr/bin" });
-    cli.forgePull({ cwd: "/repo", pr: "42", token: "ghp_secret" });
-
-    const [, args, opts] = calls[0];
-    expect(args as string[]).toEqual([
-      "forge",
-      "--forge-token-file",
-      expect.any(String),
-      "pull",
-      "42",
-    ]);
-    expect(opts).toMatchObject({ cwd: "/repo", env: { PATH: "/usr/bin" } });
-  });
-
+describe("withTokenFile", () => {
   it("writes the token to a private (0600) file that exists only for the call", () => {
-    let capturedPath = "";
     let contentDuringCall = "";
     let modeDuringCall = 0;
-    const spawn: SpawnFn = (_bin, args) => {
-      capturedPath = args[args.indexOf("--forge-token-file") + 1];
-      contentDuringCall = readFileSync(capturedPath, "utf8");
-      modeDuringCall = statSync(capturedPath).mode & 0o777;
-      return { status: 0, stdout: "", stderr: "" };
-    };
-    new WiffCli("wiff", spawn).forgePull({ cwd: "/repo", pr: "42", token: "ghp_secret" });
+    let capturedPath = "";
+    withTokenFile("ghp_secret", (path) => {
+      capturedPath = path;
+      contentDuringCall = readFileSync(path, "utf8");
+      modeDuringCall = statSync(path).mode & 0o777;
+    });
 
     expect(contentDuringCall).toBe("ghp_secret");
     expect(modeDuringCall).toBe(0o600);
     expect(existsSync(capturedPath)).toBe(false);
   });
 
-  it("never puts the raw token value in argv", () => {
-    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
-    new WiffCli("wiff", spawn).forgePull({ cwd: "/repo", pr: "42", token: "ghp_secret" });
-    expect((calls[0][1] as string[]).join(" ")).not.toContain("ghp_secret");
-  });
-
-  it("cleans up the token file even if the spawn call throws", () => {
+  it("cleans up the token file even if fn throws", () => {
     let capturedPath = "";
-    const spawn: SpawnFn = (_bin, args) => {
-      capturedPath = args[args.indexOf("--forge-token-file") + 1];
-      throw new Error("boom");
-    };
-    const cli = new WiffCli("wiff", spawn);
-    expect(() => cli.forgePull({ cwd: "/repo", pr: "42", token: "ghp_secret" })).toThrow("boom");
+    expect(() =>
+      withTokenFile("ghp_secret", (path) => {
+        capturedPath = path;
+        throw new Error("boom");
+      }),
+    ).toThrow("boom");
     expect(existsSync(capturedPath)).toBe(false);
   });
 });
@@ -125,5 +101,32 @@ describe("WiffCli.forgePush", () => {
       "--session",
       "sess-1",
     ]);
+  });
+
+  it("never puts the raw token value in argv", () => {
+    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
+    new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", token: "ghp_secret" });
+    expect((calls[0][1] as string[]).join(" ")).not.toContain("ghp_secret");
+  });
+
+  it("adds --agent before the PR number when agent is true", () => {
+    // Verified live against a real PR: without --agent, an agent's own replies never get
+    // published — plain push only publishes the human's comments.
+    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
+    new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", pr: "42", agent: true, token: "t" });
+    expect(calls[0][1] as string[]).toEqual([
+      "forge",
+      "--forge-token-file",
+      expect.any(String),
+      "push",
+      "--agent",
+      "42",
+    ]);
+  });
+
+  it("omits --agent when agent is false or unset", () => {
+    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
+    new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", pr: "42", token: "t" });
+    expect(calls[0][1] as string[]).not.toContain("--agent");
   });
 });

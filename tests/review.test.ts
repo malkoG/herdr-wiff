@@ -7,13 +7,15 @@ function makeDeps(overrides: Partial<ReviewDeps> = {}): ReviewDeps & {
   notify: ReturnType<typeof vi.fn>;
   openPane: ReturnType<typeof vi.fn>;
   newIfNeeded: ReturnType<typeof vi.fn>;
-  indexGet: ReturnType<typeof vi.fn>;
+  getPane: ReturnType<typeof vi.fn>;
+  setPane: ReturnType<typeof vi.fn>;
   indexUpsert: ReturnType<typeof vi.fn>;
 } {
   const notify = vi.fn();
   const openPane = vi.fn().mockReturnValue("pane-1");
   const newIfNeeded = vi.fn().mockReturnValue({ status: 0, stdout: "", stderr: "" });
-  const indexGet = vi.fn().mockReturnValue(undefined);
+  const getPane = vi.fn().mockReturnValue(undefined);
+  const setPane = vi.fn();
   const indexUpsert = vi.fn();
 
   const cfg: PluginConfig = structuredClone(DEFAULTS);
@@ -24,11 +26,11 @@ function makeDeps(overrides: Partial<ReviewDeps> = {}): ReviewDeps & {
     ctx,
     herdr: { notify, openPane },
     wiff: { newIfNeeded },
-    reviewIndex: { get: indexGet, upsert: indexUpsert },
+    reviewIndex: { getPane, setPane, upsert: indexUpsert },
     ...overrides,
   };
 
-  return { ...deps, notify, openPane, newIfNeeded, indexGet, indexUpsert };
+  return { ...deps, notify, openPane, newIfNeeded, getPane, setPane, indexUpsert };
 }
 
 describe("reviewAction", () => {
@@ -66,14 +68,14 @@ describe("reviewAction", () => {
     expect(deps.newIfNeeded).toHaveBeenCalledWith({ cwd: "/repo/wt", fromBase: false });
   });
 
-  it("opens a pane and tracks it on success", () => {
+  it("opens a pane and tracks it under the 'review' key on success", () => {
     const deps = makeDeps();
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalledWith(
       expect.objectContaining({ entrypoint: "review", cwd: "/repo/wt", placement: "split" }),
     );
-    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", { paneId: "pane-1" });
+    expect(deps.setPane).toHaveBeenCalledWith("/repo/wt", "review", "pane-1");
   });
 
   it("fails and notifies when herdr returns no pane id", () => {
@@ -82,21 +84,22 @@ describe("reviewAction", () => {
     const status = reviewAction(deps);
     expect(status).toBe(1);
     expect(deps.notify).toHaveBeenCalledWith(expect.stringContaining("could not open"));
-    expect(deps.indexUpsert).not.toHaveBeenCalledWith("/repo/wt", { paneId: expect.anything() });
+    expect(deps.setPane).not.toHaveBeenCalled();
   });
 
   it("reuses the tracked pane and does not open a new one", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "pane-existing" });
+    deps.getPane.mockReturnValue("pane-existing");
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).not.toHaveBeenCalled();
+    expect(deps.getPane).toHaveBeenCalledWith("/repo/wt", "review");
   });
 
   it("opens a new pane even with a tracked entry when reuse_pane is off", () => {
     const deps = makeDeps();
     deps.cfg.review.reuse_pane = false;
-    deps.indexGet.mockReturnValue({ paneId: "pane-existing" });
+    deps.getPane.mockReturnValue("pane-existing");
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalled();

@@ -95,8 +95,23 @@ available to check against — the shapes below are a best-effort guess.
 ## Constraints confirmed empirically
 
 1. **The TUI belongs to the human.** An agent must never run
-   `wiff resume`/`wiff new` (without `--no-tui`). A full-screen TUI launched from
-   a non-interactive shell hangs forever.
+   `wiff resume`/`wiff new` (without `--no-tui`)/`wiff forge pull`. A full-screen
+   TUI launched from a non-interactive shell hangs forever — or, for `forge pull`
+   specifically (confirmed live against a real PR), fails immediately with
+   "Device not configured (os error 6)" instead of hanging, since it has no
+   `--no-tui` flag at all (its own `--help`: "fetch a pull request into a session
+   **and open it**"). `forge push`, by contrast, is confirmed non-interactive —
+   verified live, publishing a real comment to a real PR with no tty attached.
+   So `review:pr` cannot run `forge pull` from the action process the way `review`
+   runs `wiff new --no-tui`; it has to happen inside the pane, which has a real
+   tty, exactly like `resume`. The `review-pr` pane entrypoint does this, reading
+   the PR number back from the `WIFF_FORGE_PR` env var set when the pane is opened
+   (`herdr plugin pane open --env`), fetching the forge token itself, and running
+   `wiff forge --forge-token-file F pull <PR>` with real stdio. One direct
+   consequence: `review` and `review:pr` pane tracking must be keyed by *which
+   entrypoint* is showing, not just by worktree — otherwise a `review:pr` call can
+   silently reuse a plain working-copy pane that was never bound to any PR (this
+   happened during live testing before the fix).
 2. **wiff has no live session daemon.** Unlike hunk, the CLI writes a file and the
    TUI reads it. Even after an agent writes or resolves a comment, an already-open
    TUI does not pick it up automatically — sending the pane `ctrl-r` is required.
