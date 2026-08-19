@@ -15,13 +15,14 @@ export interface ReviewEntry {
   /** Pane displaying the wiff review, tracked so `reuse_pane` can skip opening a second one. */
   paneId?: string;
   /**
-   * Which pane entrypoint `paneId` is currently running (`"review"` vs `"review-pr"`). `review`
-   * and `review:pr` show genuinely different content (working copy/branch vs. a specific PR) and
-   * wiff's TUI can't be re-pointed once spawned, so reuse only applies when this matches the
-   * entrypoint being requested — otherwise a `review:pr` call would silently reuse a plain
-   * working-copy pane never bound to any PR (or vice versa).
+   * Identifies what `paneId` is currently showing, so reuse only applies when a request matches
+   * exactly: `"review"` for the plain working-copy/branch pane, or `"review-pr:<number>"` for a
+   * specific PR's pane. wiff's TUI can't be re-pointed once spawned, so without this a `review:pr`
+   * call could silently reuse a plain working-copy pane never bound to any PR, or — flagged by a
+   * real Codex review of this exact code — reuse a pane still bound to a *different* PR when the
+   * worktree switches to a branch tracking another one.
    */
-  paneEntrypoint?: string;
+  paneKey?: string;
   /** Pane running the agent that owns this worktree's changes; the target for `agent prompt`. */
   agentPaneId?: string;
   /** Human-readable agent kind; use `agentPaneId` for addressing. */
@@ -148,6 +149,24 @@ export class ReviewIndex {
   clear(worktree: string): void {
     this.mutate((entries) => {
       delete entries[worktree];
+    });
+  }
+
+  /**
+   * Clears `paneId`/`paneKey` on whichever worktree entry currently points at `paneId` — used
+   * when herdr reports the pane closed or its process exited, so a stale entry can't make a later
+   * `review`/`review:pr` call think a since-vanished pane is still there to reuse (flagged by a
+   * real Codex review of this exact code — there was previously no cleanup hook at all). Leaves
+   * `agentPaneId`/`agentName` alone; those track a different, unrelated pane.
+   */
+  clearPaneById(paneId: string): void {
+    this.mutate((entries) => {
+      for (const entry of Object.values(entries)) {
+        if (entry.paneId === paneId) {
+          delete entry.paneId;
+          delete entry.paneKey;
+        }
+      }
     });
   }
 }

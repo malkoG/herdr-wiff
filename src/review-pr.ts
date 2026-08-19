@@ -46,5 +46,8 @@ export function reviewPrAction(deps: ReviewPrDeps): number {
   return openOrReuseReviewPane({ cfg, ctx, herdr, reviewIndex }, worktree, {
     entrypoint: "review-pr",
     env: { WIFF_FORGE_PR: String(prNumber) },
+    // A worktree can switch to a branch tracking a different PR; keying reuse on the PR number
+    // (not just the entrypoint) stops that from silently reusing the old PR's pane.
+    reuseKey: `review-pr:${prNumber}`,
   });
 }

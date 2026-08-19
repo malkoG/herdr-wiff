@@ -64,7 +64,7 @@ describe("reviewPrAction", () => {
     );
     expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
       paneId: "pane-1",
-      paneEntrypoint: "review-pr",
+      paneKey: "review-pr:42",
     });
   });
 
@@ -78,7 +78,7 @@ describe("reviewPrAction", () => {
 
   it("reuses the tracked pane instead of opening a new one", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "existing", paneEntrypoint: "review-pr" });
+    deps.indexGet.mockReturnValue({ paneId: "existing", paneKey: "review-pr:42" });
     const status = reviewPrAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).not.toHaveBeenCalled();
@@ -86,9 +86,23 @@ describe("reviewPrAction", () => {
 
   it("does not reuse a plain review pane never bound to a PR", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "plain-review-pane", paneEntrypoint: "review" });
+    deps.indexGet.mockReturnValue({ paneId: "plain-review-pane", paneKey: "review" });
     const status = reviewPrAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "review-pr" }));
+  });
+
+  it("does not reuse a pane bound to a different PR on the same worktree", () => {
+    // Codex-flagged: switching this worktree to a branch tracking a different PR must not reuse
+    // the pane still bound to the old one.
+    const deps = makeDeps();
+    deps.indexGet.mockReturnValue({ paneId: "old-pr-pane", paneKey: "review-pr:99" });
+    const status = reviewPrAction(deps);
+    expect(status).toBe(0);
+    expect(deps.openPane).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "review-pr" }));
+    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
+      paneId: "pane-1",
+      paneKey: "review-pr:42",
+    });
   });
 });

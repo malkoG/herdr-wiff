@@ -75,7 +75,7 @@ describe("reviewAction", () => {
     );
     expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
       paneId: "pane-1",
-      paneEntrypoint: "review",
+      paneKey: "review",
     });
   });
 
@@ -90,7 +90,7 @@ describe("reviewAction", () => {
 
   it("reuses the tracked pane and does not open a new one", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "pane-existing", paneEntrypoint: "review" });
+    deps.indexGet.mockReturnValue({ paneId: "pane-existing", paneKey: "review" });
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe("reviewAction", () => {
 
   it("opens a new pane when the tracked pane is running a different entrypoint", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "pr-pane", paneEntrypoint: "review-pr" });
+    deps.indexGet.mockReturnValue({ paneId: "pr-pane", paneKey: "review-pr" });
     const status = reviewAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalled();

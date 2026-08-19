@@ -21,15 +21,21 @@ export interface OpenOrReuseOptions {
   entrypoint?: string;
   /** Extra env vars for the launched pane, e.g. the PR number `review-pr` reads back. */
   env?: Record<string, string>;
+  /**
+   * Overrides `entrypoint` as the reuse-matching key. `review:pr` sets this to `review-pr:<PR
+   * number>` so that switching this worktree to a branch tracking a *different* PR opens a fresh
+   * pane instead of reusing one still bound to the old PR. Defaults to `entrypoint`.
+   */
+  reuseKey?: string;
 }
 
 /**
  * Opens (or reuses) the wiff review pane for `worktree`.
  *
- * Reuse only applies when the tracked pane is running the *same* entrypoint being requested —
- * `review` and `review:pr` show genuinely different content and wiff's TUI can't be re-pointed
- * once spawned, so a `review:pr` call must never silently reuse a plain working-copy pane (or
- * vice versa). A different entrypoint always opens its own pane, alongside any existing one.
+ * Reuse only applies when the tracked pane's key matches exactly — `review` and `review:pr` show
+ * genuinely different content and wiff's TUI can't be re-pointed once spawned, so a `review:pr`
+ * call must never silently reuse a plain working-copy pane (or one bound to a different PR). A
+ * non-matching key always opens its own pane, alongside any existing one.
  *
  * Reusing an already-tracked pane skips opening a new window, but does **not** re-run whatever
  * the entrypoint does (`wiff resume` just keeps showing what it already had; `review-pr`'s
@@ -45,6 +51,7 @@ export function openOrReuseReviewPane(
 ): number {
   const { cfg, ctx, herdr, reviewIndex } = deps;
   const entrypoint = opts.entrypoint ?? "review";
+  const paneKey = opts.reuseKey ?? entrypoint;
 
   const agentPatch = agentPaneFromContext(ctx);
   if (Object.keys(agentPatch).length > 0) {
@@ -52,7 +59,7 @@ export function openOrReuseReviewPane(
   }
 
   const existing = reviewIndex.get(worktree);
-  if (cfg.review.reuse_pane && existing?.paneId && existing.paneEntrypoint === entrypoint) {
+  if (cfg.review.reuse_pane && existing?.paneId && existing.paneKey === paneKey) {
     return 0;
   }
 
@@ -68,6 +75,6 @@ export function openOrReuseReviewPane(
     return 1;
   }
 
-  reviewIndex.upsert(worktree, { paneId, paneEntrypoint: entrypoint });
+  reviewIndex.upsert(worktree, { paneId, paneKey });
   return 0;
 }

@@ -56,4 +56,34 @@ describe("ReviewIndex", () => {
     new ReviewIndex(dir).upsert("/repo/a", { paneId: "pane-1" });
     expect(new ReviewIndex(dir).get("/repo/a")).toEqual({ paneId: "pane-1" });
   });
+
+  describe("clearPaneById", () => {
+    it("clears paneId and paneKey but preserves agent tracking", () => {
+      const index = new ReviewIndex(dir);
+      index.upsert("/repo/a", {
+        paneId: "pane-1",
+        paneKey: "review",
+        agentPaneId: "agent-1",
+        agentName: "claude",
+      });
+      index.clearPaneById("pane-1");
+      expect(index.get("/repo/a")).toEqual({ agentPaneId: "agent-1", agentName: "claude" });
+    });
+
+    it("only clears the worktree whose paneId matches", () => {
+      const index = new ReviewIndex(dir);
+      index.upsert("/repo/a", { paneId: "pane-1", paneKey: "review" });
+      index.upsert("/repo/b", { paneId: "pane-2", paneKey: "review" });
+      index.clearPaneById("pane-1");
+      expect(index.get("/repo/a")).toEqual({});
+      expect(index.get("/repo/b")).toEqual({ paneId: "pane-2", paneKey: "review" });
+    });
+
+    it("is a no-op when no entry matches", () => {
+      const index = new ReviewIndex(dir);
+      index.upsert("/repo/a", { paneId: "pane-1", paneKey: "review" });
+      index.clearPaneById("pane-nonexistent");
+      expect(index.get("/repo/a")).toEqual({ paneId: "pane-1", paneKey: "review" });
+    });
+  });
 });
