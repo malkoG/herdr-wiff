@@ -32,37 +32,37 @@ on = "pane.exited"
 command = ["node", "dist/bin/event.js"]
 
 [[actions]]
-id = "review"
+id = "wiff-review"
 title = "wiff: review changes"
 contexts = ["workspace", "pane"]
-command = ["node", "dist/bin/action.js", "review"]
+command = ["node", "dist/bin/action.js", "wiff-review"]
 
 [[actions]]
-id = "send-review"
+id = "wiff-send-review"
 title = "wiff: send review to agent"
 contexts = ["pane"]
-command = ["node", "dist/bin/action.js", "send-review"]
+command = ["node", "dist/bin/action.js", "wiff-send-review"]
 
 [[actions]]
-id = "reload"
+id = "wiff-reload"
 title = "wiff: reload the open review"
 contexts = ["workspace", "pane"]
-command = ["node", "dist/bin/action.js", "reload"]
+command = ["node", "dist/bin/action.js", "wiff-reload"]
 
 [[actions]]
-id = "review:pr"
+id = "wiff-review-pr"
 title = "wiff: review this branch's pull request"
 contexts = ["workspace", "pane"]
-command = ["node", "dist/bin/action.js", "review:pr"]
+command = ["node", "dist/bin/action.js", "wiff-review-pr"]
 
 [[actions]]
-id = "sync"
+id = "wiff-sync"
 title = "wiff: sync review to the pull request"
 contexts = ["workspace", "pane"]
-command = ["node", "dist/bin/action.js", "sync"]
+command = ["node", "dist/bin/action.js", "wiff-sync"]
 
 [[actions]]
-id = "refresh"
+id = "wiff-refresh"
 title = "wiff: refresh the review session"
 contexts = ["workspace", "pane"]
-command = ["node", "dist/bin/action.js", "refresh"]
+command = ["node", "dist/bin/action.js", "wiff-refresh"]

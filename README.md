@@ -20,14 +20,19 @@ herdr plugin link .
 
 ## Actions
 
-| Action        | Contexts           | What it does |
-| ------------- | ------------------- | ------------ |
-| `review`      | workspace, pane      | Opens (or reuses) a wiff review pane for the focused pane's worktree — working copy by default. |
-| `review:pr`   | workspace, pane      | Resolves the current branch's PR via `gh`, `wiff forge pull`s it, and opens the review pane. No PR → falls back to `review`. |
-| `send-review` | pane                 | Sends unresolved human review comments to the agent that owns this worktree. |
-| `sync`        | workspace, pane      | `wiff forge push`es the review's comments and replies back to the PR. |
-| `reload`      | workspace, pane      | Sends `ctrl-r` to the open review pane so it picks up changes wiff wrote to disk. |
-| `refresh`     | workspace, pane      | `wiff refresh`es the session (captures new changes, rebases comments), then reloads the pane. |
+| Action              | Contexts           | What it does |
+| ------------------- | ------------------- | ------------ |
+| `wiff-review`      | workspace, pane      | Opens (or reuses) a wiff review pane for the focused pane's worktree — working copy by default. |
+| `wiff-review-pr`   | workspace, pane      | Resolves the current branch's PR via `gh`, `wiff forge pull`s it, and opens the review pane. No PR → falls back to `wiff-review`. |
+| `wiff-send-review` | pane                 | Sends unresolved human review comments to the agent that owns this worktree. |
+| `wiff-sync`        | workspace, pane      | `wiff forge push`es the review's comments and replies back to the PR. |
+| `wiff-reload`      | workspace, pane      | Sends `ctrl-r` to the open review pane so it picks up changes wiff wrote to disk. |
+| `wiff-refresh`     | workspace, pane      | `wiff refresh`es the session (captures new changes, rebases comments), then reloads the pane. |
+
+Action ids are namespaced with a `wiff-` prefix so they can't collide with another
+installed plugin's action id — `herdr plugin action invoke <id>` (and custom
+`[[keys.command]]` bindings) resolve by bare action id, and herdr only requires
+disambiguating by plugin id when two plugins register the *same* id.
 
 ## Configuration
 

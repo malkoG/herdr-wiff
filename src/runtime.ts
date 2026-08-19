@@ -37,17 +37,17 @@ export function buildRuntime(env: NodeJS.ProcessEnv): Runtime {
 
 export async function dispatch(actionId: string, rt: Runtime): Promise<number> {
   switch (actionId) {
-    case "review":
+    case "wiff-review":
       return reviewAction(rt);
-    case "review:pr":
+    case "wiff-review-pr":
       return reviewPrAction(rt);
-    case "send-review":
+    case "wiff-send-review":
       return sendReviewAction(rt);
-    case "sync":
+    case "wiff-sync":
       return syncAction(rt);
-    case "reload":
+    case "wiff-reload":
       return reloadAction(rt);
-    case "refresh":
+    case "wiff-refresh":
       return refreshAction(rt);
     default:
       return 2;
