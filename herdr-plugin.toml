@@ -1,0 +1,54 @@
+id = "kodingwarrior.wiff"
+name = "wiff"
+version = "0.1.0"
+min_herdr_version = "0.8.0"
+description = "Review wiff code-review sessions inside herdr, and route human comments back to the agent that owns the diff."
+platforms = ["macos", "linux"]
+
+[[build]]
+command = ["npm", "ci"]
+
+[[build]]
+command = ["npm", "run", "build"]
+
+[[panes]]
+id = "review"
+title = "wiff review"
+placement = "split"
+command = ["sh", "-c", "exec node \"$HERDR_PLUGIN_ROOT/dist/bin/pane.js\" review"]
+
+[[actions]]
+id = "review"
+title = "wiff: review changes"
+contexts = ["workspace", "pane"]
+command = ["node", "dist/bin/action.js", "review"]
+
+[[actions]]
+id = "send-review"
+title = "wiff: send review to agent"
+contexts = ["pane"]
+command = ["node", "dist/bin/action.js", "send-review"]
+
+[[actions]]
+id = "reload"
+title = "wiff: reload the open review"
+contexts = ["workspace", "pane"]
+command = ["node", "dist/bin/action.js", "reload"]
+
+[[actions]]
+id = "review:pr"
+title = "wiff: review this branch's pull request"
+contexts = ["workspace", "pane"]
+command = ["node", "dist/bin/action.js", "review:pr"]
+
+[[actions]]
+id = "sync"
+title = "wiff: sync review to the pull request"
+contexts = ["workspace", "pane"]
+command = ["node", "dist/bin/action.js", "sync"]
+
+[[actions]]
+id = "refresh"
+title = "wiff: refresh the review session"
+contexts = ["workspace", "pane"]
+command = ["node", "dist/bin/action.js", "refresh"]
