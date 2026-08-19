@@ -15,7 +15,14 @@ export interface SyncDeps {
   getToken?: typeof getForgeToken;
 }
 
-/** Publishes the review's comments and replies back to the PR. */
+/**
+ * Publishes the review's comments and replies back to the PR.
+ *
+ * Verified live: `wiff forge push` only publishes comments matching the authorship of the call —
+ * plain `push` publishes the human's, `push --agent` publishes the agent's, and neither includes
+ * the other (confirmed against a real PR: an agent's reply stayed local until pushed again with
+ * `--agent`). Since a review can have both kinds pending, this pushes both.
+ */
 export function syncAction(deps: SyncDeps): number {
   const { cfg, ctx, herdr, wiff, gh } = deps;
   const getToken = deps.getToken ?? getForgeToken;
@@ -33,13 +40,18 @@ export function syncAction(deps: SyncDeps): number {
   }
 
   const prNumber = gh.currentPrNumber(worktree);
-  const push = wiff.forgePush({
-    cwd: worktree,
-    pr: prNumber === null ? undefined : String(prNumber),
-    token: tokenResult.token,
-  });
-  if (push.status !== 0) {
-    herdr.notify(`wiff: could not push to the PR. ${maskSecret(push.stderr, tokenResult.token)}`);
+  const pr = prNumber === null ? undefined : String(prNumber);
+
+  const human = wiff.forgePush({ cwd: worktree, pr, token: tokenResult.token });
+  const agent = wiff.forgePush({ cwd: worktree, pr, agent: true, token: tokenResult.token });
+
+  const failures = [
+    human.status !== 0 ? `human comments: ${maskSecret(human.stderr, tokenResult.token)}` : null,
+    agent.status !== 0 ? `agent comments: ${maskSecret(agent.stderr, tokenResult.token)}` : null,
+  ].filter((message): message is string => message !== null);
+
+  if (failures.length > 0) {
+    herdr.notify(`wiff: could not push to the PR (${failures.join("; ")}).`);
     return 1;
   }
 

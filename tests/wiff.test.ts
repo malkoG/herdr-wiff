@@ -108,4 +108,25 @@ describe("WiffCli.forgePush", () => {
     new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", token: "ghp_secret" });
     expect((calls[0][1] as string[]).join(" ")).not.toContain("ghp_secret");
   });
+
+  it("adds --agent before the PR number when agent is true", () => {
+    // Verified live against a real PR: without --agent, an agent's own replies never get
+    // published — plain push only publishes the human's comments.
+    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
+    new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", pr: "42", agent: true, token: "t" });
+    expect(calls[0][1] as string[]).toEqual([
+      "forge",
+      "--forge-token-file",
+      expect.any(String),
+      "push",
+      "--agent",
+      "42",
+    ]);
+  });
+
+  it("omits --agent when agent is false or unset", () => {
+    const { spawn, calls } = fakeSpawn({ status: 0, stdout: "", stderr: "" });
+    new WiffCli("wiff", spawn).forgePush({ cwd: "/repo", pr: "42", token: "t" });
+    expect(calls[0][1] as string[]).not.toContain("--agent");
+  });
 });

@@ -85,10 +85,17 @@ export class WiffCli {
    * bare CLI arg: a private, mode-0600 temp file is written just for this call and deleted
    * immediately after, so the token value never appears in `ps` output and never lingers in
    * `this.env` for a later, non-forge call.
+   *
+   * `agent` matters and is easy to miss: verified live that plain `forge push` only publishes
+   * *human*-authored comments — an agent's own replies (added via `wiff comment add --agent`)
+   * silently do not get published without `--agent` on the push itself (confirmed by `--help`:
+   * "publish that agent's comments **instead of** the human reviewer's" — the two are mutually
+   * exclusive per call). `syncAction` calls this twice, once with each, to publish both.
    */
-  forgePush(opts: { cwd: string; pr?: string; session?: string; token: string }): WiffResult {
+  forgePush(opts: { cwd: string; pr?: string; session?: string; agent?: boolean; token: string }): WiffResult {
     return withTokenFile(opts.token, (tokenFile) => {
       const args = ["forge", "--forge-token-file", tokenFile, "push"];
+      if (opts.agent) args.push("--agent");
       if (opts.pr) args.push(opts.pr);
       if (opts.session) args.push("--session", opts.session);
       return this.spawn(this.bin, args, { cwd: opts.cwd, env: this.env });
