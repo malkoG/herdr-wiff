@@ -8,7 +8,7 @@ export interface PaneOpenDeps {
   cfg: PluginConfig;
   ctx: HerdrContext;
   herdr: Pick<HerdrAdapter, "notify" | "openPane">;
-  reviewIndex: Pick<ReviewIndex, "get" | "upsert">;
+  reviewIndex: Pick<ReviewIndex, "getPane" | "setPane" | "upsert">;
 }
 
 /** Returns the invoking pane only when herdr reports that it runs an agent. */
@@ -58,8 +58,7 @@ export function openOrReuseReviewPane(
     reviewIndex.upsert(worktree, agentPatch);
   }
 
-  const existing = reviewIndex.get(worktree);
-  if (cfg.review.reuse_pane && existing?.paneId && existing.paneKey === paneKey) {
+  if (cfg.review.reuse_pane && reviewIndex.getPane(worktree, paneKey)) {
     return 0;
   }
 
@@ -75,6 +74,6 @@ export function openOrReuseReviewPane(
     return 1;
   }
 
-  reviewIndex.upsert(worktree, { paneId, paneKey });
+  reviewIndex.setPane(worktree, paneKey, paneId);
   return 0;
 }

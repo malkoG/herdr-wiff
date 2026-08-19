@@ -8,7 +8,11 @@ export interface ReloadDeps {
   reviewIndex: Pick<ReviewIndex, "get">;
 }
 
-/** Sends `ctrl-r` to the tracked review pane so it picks up changes wiff wrote to disk. */
+/**
+ * Sends `ctrl-r` to every tracked review pane for this worktree, so each picks up changes wiff
+ * wrote to disk. More than one can be open at once (e.g. a plain `review` pane alongside a
+ * `review-pr` one for a specific PR) since each reuse key gets its own pane.
+ */
 export function reloadAction(deps: ReloadDeps): number {
   const { ctx, herdr, reviewIndex } = deps;
 
@@ -18,14 +22,15 @@ export function reloadAction(deps: ReloadDeps): number {
     return 1;
   }
 
-  const paneId = reviewIndex.get(worktree)?.paneId;
-  if (!paneId) {
+  const panes = Object.values(reviewIndex.get(worktree)?.panes ?? {});
+  if (panes.length === 0) {
     herdr.notify("wiff: no review pane is open for this worktree.");
     return 0;
   }
 
-  if (!herdr.sendKeys(paneId, "ctrl+r")) {
-    herdr.notify(`wiff: could not refresh the review pane ${paneId}.`);
+  const failed = panes.filter((paneId) => !herdr.sendKeys(paneId, "ctrl+r"));
+  if (failed.length > 0) {
+    herdr.notify(`wiff: could not refresh review pane(s): ${failed.join(", ")}.`);
     return 1;
   }
 

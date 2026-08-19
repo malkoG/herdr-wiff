@@ -11,7 +11,7 @@ function makeDeps(overrides: Partial<RefreshDeps> = {}): RefreshDeps & {
   const notify = vi.fn();
   const sendKeys = vi.fn().mockReturnValue(true);
   const refresh = vi.fn().mockReturnValue({ status: 0, stdout: "", stderr: "" });
-  const indexGet = vi.fn().mockReturnValue({ paneId: "review-pane" });
+  const indexGet = vi.fn().mockReturnValue({ panes: { review: "review-pane" } });
 
   const ctx: HerdrContext = { worktree: "/repo/wt" };
 

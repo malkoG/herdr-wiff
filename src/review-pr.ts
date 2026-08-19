@@ -13,7 +13,7 @@ export interface ReviewPrDeps {
   herdr: Pick<HerdrAdapter, "notify" | "openPane">;
   wiff: Pick<WiffCli, "newIfNeeded">;
   gh: Pick<GhAdapter, "currentPrNumber">;
-  reviewIndex: Pick<ReviewIndex, "get" | "upsert">;
+  reviewIndex: Pick<ReviewIndex, "getPane" | "setPane" | "upsert">;
 }
 
 /**

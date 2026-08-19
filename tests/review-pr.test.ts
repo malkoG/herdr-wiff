@@ -8,14 +8,16 @@ function makeDeps(overrides: Partial<ReviewPrDeps> = {}): ReviewPrDeps & {
   openPane: ReturnType<typeof vi.fn>;
   newIfNeeded: ReturnType<typeof vi.fn>;
   currentPrNumber: ReturnType<typeof vi.fn>;
-  indexGet: ReturnType<typeof vi.fn>;
+  getPane: ReturnType<typeof vi.fn>;
+  setPane: ReturnType<typeof vi.fn>;
   indexUpsert: ReturnType<typeof vi.fn>;
 } {
   const notify = vi.fn();
   const openPane = vi.fn().mockReturnValue("pane-1");
   const newIfNeeded = vi.fn().mockReturnValue({ status: 0, stdout: "", stderr: "" });
   const currentPrNumber = vi.fn().mockReturnValue(42);
-  const indexGet = vi.fn().mockReturnValue(undefined);
+  const getPane = vi.fn().mockReturnValue(undefined);
+  const setPane = vi.fn();
   const indexUpsert = vi.fn();
 
   const cfg: PluginConfig = structuredClone(DEFAULTS);
@@ -27,11 +29,11 @@ function makeDeps(overrides: Partial<ReviewPrDeps> = {}): ReviewPrDeps & {
     herdr: { notify, openPane },
     wiff: { newIfNeeded },
     gh: { currentPrNumber },
-    reviewIndex: { get: indexGet, upsert: indexUpsert },
+    reviewIndex: { getPane, setPane, upsert: indexUpsert },
     ...overrides,
   };
 
-  return { ...deps, notify, openPane, newIfNeeded, currentPrNumber, indexGet, indexUpsert };
+  return { ...deps, notify, openPane, newIfNeeded, currentPrNumber, getPane, setPane, indexUpsert };
 }
 
 describe("reviewPrAction", () => {
@@ -62,10 +64,7 @@ describe("reviewPrAction", () => {
         env: { WIFF_FORGE_PR: "42" },
       }),
     );
-    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
-      paneId: "pane-1",
-      paneKey: "review-pr:42",
-    });
+    expect(deps.setPane).toHaveBeenCalledWith("/repo/wt", "review-pr:42", "pane-1");
   });
 
   it("fails and notifies when herdr returns no pane id", () => {
@@ -78,15 +77,17 @@ describe("reviewPrAction", () => {
 
   it("reuses the tracked pane instead of opening a new one", () => {
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "existing", paneKey: "review-pr:42" });
+    deps.getPane.mockReturnValue("existing");
     const status = reviewPrAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).not.toHaveBeenCalled();
+    expect(deps.getPane).toHaveBeenCalledWith("/repo/wt", "review-pr:42");
   });
 
   it("does not reuse a plain review pane never bound to a PR", () => {
+    // getPane is looked up by the "review-pr:42" key specifically, so a pane tracked only under
+    // "review" (the mock's default undefined return for any other key) is correctly invisible here.
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "plain-review-pane", paneKey: "review" });
     const status = reviewPrAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "review-pr" }));
@@ -96,13 +97,23 @@ describe("reviewPrAction", () => {
     // Codex-flagged: switching this worktree to a branch tracking a different PR must not reuse
     // the pane still bound to the old one.
     const deps = makeDeps();
-    deps.indexGet.mockReturnValue({ paneId: "old-pr-pane", paneKey: "review-pr:99" });
+    deps.getPane.mockImplementation((_wt: string, key: string) =>
+      key === "review-pr:99" ? "old-pr-pane" : undefined,
+    );
     const status = reviewPrAction(deps);
     expect(status).toBe(0);
     expect(deps.openPane).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "review-pr" }));
-    expect(deps.indexUpsert).toHaveBeenCalledWith("/repo/wt", {
-      paneId: "pane-1",
-      paneKey: "review-pr:42",
-    });
+    expect(deps.setPane).toHaveBeenCalledWith("/repo/wt", "review-pr:42", "pane-1");
+  });
+
+  it("keeps the old PR's pane tracked when a different PR opens its own", () => {
+    // The bug Codex actually flagged: opening a new key's pane must not clobber another key's
+    // still-tracked pane. setPane (unlike the old upsert-based design) merges per key, so this is
+    // really just confirming reviewPrAction calls setPane rather than something that replaces the
+    // whole entry.
+    const deps = makeDeps();
+    reviewPrAction(deps);
+    expect(deps.setPane).toHaveBeenCalledTimes(1);
+    expect(deps.setPane).toHaveBeenCalledWith("/repo/wt", "review-pr:42", "pane-1");
   });
 });

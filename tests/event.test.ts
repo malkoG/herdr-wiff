@@ -17,7 +17,7 @@ describe("event.main", () => {
   });
 
   it("clears the matching worktree's pane tracking on pane_closed", () => {
-    new ReviewIndex(stateDir).upsert("/repo/wt", { paneId: "wK:p3", paneKey: "review" });
+    new ReviewIndex(stateDir).setPane("/repo/wt", "review", "wK:p3");
 
     const status = main({
       HERDR_PLUGIN_STATE_DIR: stateDir,
@@ -28,11 +28,11 @@ describe("event.main", () => {
     });
 
     expect(status).toBe(0);
-    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({});
+    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({ panes: {} });
   });
 
   it("clears on pane_exited the same way", () => {
-    new ReviewIndex(stateDir).upsert("/repo/wt", { paneId: "wK:p5", paneKey: "review-pr:42" });
+    new ReviewIndex(stateDir).setPane("/repo/wt", "review-pr:42", "wK:p5");
 
     main({
       HERDR_PLUGIN_STATE_DIR: stateDir,
@@ -42,11 +42,27 @@ describe("event.main", () => {
       }),
     });
 
-    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({});
+    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({ panes: {} });
+  });
+
+  it("clears only the matching key, leaving another live pane on the same worktree tracked", () => {
+    const index = new ReviewIndex(stateDir);
+    index.setPane("/repo/wt", "review", "wK:p3");
+    index.setPane("/repo/wt", "review-pr:42", "wK:p8");
+
+    main({
+      HERDR_PLUGIN_STATE_DIR: stateDir,
+      HERDR_PLUGIN_EVENT_JSON: JSON.stringify({
+        event: "pane_closed",
+        data: { type: "pane_closed", pane_id: "wK:p3", workspace_id: "wK" },
+      }),
+    });
+
+    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({ panes: { "review-pr:42": "wK:p8" } });
   });
 
   it("does nothing for an unrelated pane id", () => {
-    new ReviewIndex(stateDir).upsert("/repo/wt", { paneId: "wK:p3", paneKey: "review" });
+    new ReviewIndex(stateDir).setPane("/repo/wt", "review", "wK:p3");
 
     main({
       HERDR_PLUGIN_STATE_DIR: stateDir,
@@ -56,7 +72,7 @@ describe("event.main", () => {
       }),
     });
 
-    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({ paneId: "wK:p3", paneKey: "review" });
+    expect(new ReviewIndex(stateDir).get("/repo/wt")).toEqual({ panes: { review: "wK:p3" } });
   });
 
   it("does nothing when the event JSON is missing or malformed", () => {

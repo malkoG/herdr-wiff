@@ -74,7 +74,9 @@ export function sendReviewAction(deps: SendReviewDeps): number {
     return 1;
   }
 
-  if (entry?.paneId) herdr.sendKeys(entry.paneId, "ctrl+r");
+  for (const paneId of Object.values(entry?.panes ?? {})) {
+    herdr.sendKeys(paneId, "ctrl+r");
+  }
 
   herdr.notify(`wiff: sent ${threads.length} comment thread(s) to ${label ?? target}.`);
   return 0;
